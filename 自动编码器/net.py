@@ -19,6 +19,30 @@ class AutoencoderLinear(nn.Module):
         return x
 
 
+class AutoencoderConv(nn.Module):
+    def __init__(self):
+        super(AutoencoderConv, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv2d(1, 16, 3, stride=2, padding=1),  # (1, 28, 28) -> (16, 14, 14)
+            nn.ReLU(),
+            nn.Conv2d(16, 32, 3, stride=2, padding=1),  # (16, 14, 14) -> (32, 7, 7)
+            nn.ReLU(),
+        )
+
+        # 解码器
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),  # (32, 7, 7) -> (16, 14, 14)
+            nn.ReLU(),
+            nn.ConvTranspose2d(16, 1, 3, stride=2, padding=1, output_padding=1),  # (16, 14, 14) -> (1, 28, 28)
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        x = self.encode(x)
+        x = self.decode(x)
+        return x
+
+
 class MyNet(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(MyNet, self).__init__()

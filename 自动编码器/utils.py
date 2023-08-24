@@ -47,3 +47,5 @@ def update_best_model(model, loss, best_loss, best_model_path):
         best_loss = loss
         torch.save(model.state_dict(), f'{best_model_path}/best_model.pt')
     return best_loss
+
+# def draw_loss_graph(x,y,color,label)
