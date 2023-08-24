@@ -4,18 +4,18 @@ import torch.nn as nn
 class AutoencoderLinear(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(AutoencoderLinear, self).__init__()
-        self.encode = nn.Sequential(
+        self.encoder = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU()
         )
-        self.decode = nn.Sequential(
+        self.decoder = nn.Sequential(
             nn.Linear(hidden_size, input_size),
             nn.Sigmoid()
         )
 
     def forward(self, x):
-        x = self.encode(x)
-        x = self.decode(x)
+        x = self.encoder(x)
+        x = self.decoder(x)
         return x
 
 
@@ -38,8 +38,8 @@ class AutoencoderConv(nn.Module):
         )
 
     def forward(self, x):
-        x = self.encode(x)
-        x = self.decode(x)
+        x = self.encoder(x)
+        x = self.decoder(x)
         return x
 
 

@@ -48,13 +48,14 @@ x = list(range(1, epochs + 1))
 
 for epoch in tqdm(range(epochs), desc="epoch"):
     for data, _ in tqdm(train_loader, desc="batch"):
+        data_con = data
         data = data.view(-1, config["input_size"])
         optimizer.zero_grad()
         optimizer_conv.zero_grad()
         output_line = line_model(data)
-        output_conv = conv_model(data)
+        output_conv = conv_model(data_con)
         loss_line = F.mse_loss(output_line, data)
-        loss_conv = F.mse_loss(output_conv, data)
+        loss_conv = F.mse_loss(output_conv, data_con)
         loss_line.backward()
         loss_conv.backward()
         optimizer.step()
