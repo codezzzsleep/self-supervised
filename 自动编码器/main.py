@@ -1,11 +1,13 @@
+import torch
 from tqdm import tqdm
 from torch.optim import Adam
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
+
 from net import AutoencoderLinear, AutoencoderConv
 import matplotlib.pyplot as plt
+from data import load_data
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 config = {
     "input_size": 784,
     "hidden_size": 121,
@@ -17,21 +19,9 @@ config = {
     "model_select": "all"
 }
 
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize([0.5], [0.5])]
-)
-
-line_model = AutoencoderLinear(config["input_size"], config["hidden_size"])
-conv_model = AutoencoderConv()
-train_dataset = datasets.MNIST(root="./data",
-                               train=True,
-                               transform=transform,
-                               download=True)
-
-train_loader = DataLoader(train_dataset,
-                          batch_size=config["batch_size"],
-                          shuffle=True)
+train_dataloader = load_data()
+line_model = AutoencoderLinear(config["input_size"], config["hidden_size"]).to(device)
+conv_model = AutoencoderConv().to(device)
 
 optimizer = Adam(line_model.parameters(),
                  lr=config["learning_rate"],
@@ -47,9 +37,9 @@ auto_cov_loss = []
 x = list(range(1, epochs + 1))
 
 for epoch in tqdm(range(epochs), desc="epoch"):
-    for data, _ in tqdm(train_loader, desc="batch"):
-        data_con = data
-        data = data.view(-1, config["input_size"])
+    for data, _ in tqdm(train_dataloader, desc="batch"):
+        data_con = data.to(device)
+        data = data.view(-1, config["input_size"]).to(device)
         optimizer.zero_grad()
         optimizer_conv.zero_grad()
         output_line = line_model(data)
