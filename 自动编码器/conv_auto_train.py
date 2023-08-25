@@ -12,7 +12,7 @@ model.train()
 
 def train(dataloader, epochs, device, writer):
     model.to(device)
-    for epoch in tqdm(range(epochs), desc="conv epoch"):
+    for epoch in tqdm(range(epochs), desc="conv  epoch"):
         run_loss = 0.0
         for i, data in enumerate(dataloader):
             optimizer.zero_grad()
