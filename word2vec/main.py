@@ -117,6 +117,7 @@ model.to(device)
 
 # 训练模型
 train(model, data_loader, epochs, learning_rate)
+print("train done!")
 torch.save(model.state_dict(), 'runs/last_model.pt')
 writer.close()
 x = list(range(1, epochs + 1))
@@ -129,3 +130,4 @@ plt.ylabel('y-axis')
 
 # 显示图形
 plt.show()
+print("task done!")
