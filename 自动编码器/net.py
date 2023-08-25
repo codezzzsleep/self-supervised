@@ -59,11 +59,11 @@ class ConvAutoencoder(nn.Module):
         return self.decoder(x)
 
 
-class StackedAutoEncoderPro(nn.Module):
+class StackedAutoEncoder(nn.Module):
     """堆栈自动编码器--没有使用逐层训练策略"""
 
     def __init__(self):
-        super(StackedAutoEncoderPro, self).__init__()
+        super(StackedAutoEncoder, self).__init__()
 
         # Encoding layers
         self.encoder = nn.Sequential(
@@ -119,10 +119,11 @@ class AutoEncoder(nn.Module):
         return x
 
 
-class StackedAutoEncoder(nn.Module):
+class StackedAutoEncoderPro(nn.Module):
     """不参与训练，在单层训练完成后，集成使用"""
+
     def __init__(self, autoencoders):
-        super(StackedAutoEncoder, self).__init__()
+        super(StackedAutoEncoderPro, self).__init__()
 
         self.encoder = nn.Sequential(
             autoencoders[0].encoder,

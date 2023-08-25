@@ -5,6 +5,7 @@ from data import load_data
 import utils
 import line_auto_train
 import conv_auto_train
+import stack_auto_train
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 config = {
@@ -21,6 +22,10 @@ train_dataloader = load_data()
 epochs = config["epochs"]
 path = utils.create_result_folder()
 writer = SummaryWriter(path[2])
+auto_stack_loss = stack_auto_train.train(dataloader=train_dataloader,
+                                         epochs=epochs,
+                                         device=device,
+                                         writer=writer)
 auto_line_loss = line_auto_train.train(dataloader=train_dataloader,
                                        epochs=epochs,
                                        device=device,
