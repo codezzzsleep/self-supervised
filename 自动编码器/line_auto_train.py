@@ -27,7 +27,7 @@ def train(dataloader, epochs, device, writer):
             run_loss += loss.item()
 
         loss_list.append(run_loss / (i + 1))
-        writer.add_scalar('Loss/train', run_loss / (i + 1), epoch)
+        writer.add_scalar('LinearAutoencoderLoss/train', run_loss / (i + 1), epoch)
     print("line done!")
     return loss_list
 
