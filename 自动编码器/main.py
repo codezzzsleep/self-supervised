@@ -1,9 +1,5 @@
 import torch
-from tqdm import tqdm
-from torch.optim import Adam
-import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-from net import LinearAutoencoder, ConvAutoencoder
 import matplotlib.pyplot as plt
 from data import load_data
 import utils
@@ -21,11 +17,8 @@ config = {
     "weight_decay": 1e-5,
     "model_select": "all"
 }
-
 train_dataloader = load_data()
-
 epochs = config["epochs"]
-
 path = utils.create_result_folder()
 writer = SummaryWriter(path[2])
 auto_line_loss = line_auto_train.train(dataloader=train_dataloader,
@@ -36,7 +29,6 @@ auto_cov_loss = conv_auto_train.train(dataloader=train_dataloader,
                                       epochs=epochs,
                                       device=device,
                                       writer=writer)
-
 print("train done!")
 writer.close()
 x = list(range(1, epochs + 1))
