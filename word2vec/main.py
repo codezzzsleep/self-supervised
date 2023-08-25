@@ -58,6 +58,8 @@ class Word2Vec(nn.Module):
 loss_list = []
 writer = SummaryWriter("runs/logs")
 
+min_loss = 10000.0
+
 
 # 训练函数
 def train(model, data_loader, epochs, learning_rate):
@@ -80,6 +82,10 @@ def train(model, data_loader, epochs, learning_rate):
             run_loss += loss.item()
             if batch % 500 == 0:
                 print(f"Epoch: {epoch}, Batch: {batch}, Loss: {loss.item()}")
+                writer.add_scalar("loss/500_batch", loss.item(), batch / 500)
+            if loss.item() < min_loss:
+                torch.save(model.state_dict(), 'runs/best_model.pt')
+
         loss_list.append(run_loss / (batch + 1))
         writer.add_scalar("meansLoss/epoch", run_loss / (batch + 1), epoch)
 
