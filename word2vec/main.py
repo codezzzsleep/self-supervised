@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from collections import Counter
-import numpy as np
-import pandas as pd
+
+import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 
 
 # 构建词汇表和数据集
@@ -54,12 +55,17 @@ class Word2Vec(nn.Module):
         return scores
 
 
+loss_list = []
+writer = SummaryWriter("runs/logs")
+
+
 # 训练函数
 def train(model, data_loader, epochs, learning_rate):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     for epoch in range(epochs):
+        run_loss = 0.0
         for batch, (center_idx, context_idx) in enumerate(data_loader):
             center_idx = center_idx.to(device)
             context_idx = context_idx.to(device)
@@ -71,9 +77,11 @@ def train(model, data_loader, epochs, learning_rate):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
+            run_loss += loss.item()
             if batch % 500 == 0:
                 print(f"Epoch: {epoch}, Batch: {batch}, Loss: {loss.item()}")
+        loss_list.append(run_loss / (batch + 1))
+        writer.add_scalar("meansLoss/epoch", run_loss / (batch + 1), epoch)
 
 
 # 示例文本
@@ -87,7 +95,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
 window_size = 2
 embed_size = 50
 batch_size = 4
-epochs = 10
+epochs = 1
 learning_rate = 0.01
 
 # 数据准备
@@ -103,3 +111,15 @@ model.to(device)
 
 # 训练模型
 train(model, data_loader, epochs, learning_rate)
+torch.save(model.state_dict(), 'runs/last_model.pt')
+writer.close()
+x = list(range(1, epochs + 1))
+plt.plot(x, loss_list)
+
+# 添加标题和坐标轴标签
+plt.title('loss/epoch')
+plt.xlabel('x-axis')
+plt.ylabel('y-axis')
+
+# 显示图形
+plt.show()
