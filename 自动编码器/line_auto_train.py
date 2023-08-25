@@ -8,17 +8,41 @@ optimizer = Adam(model.parameters(), lr=0.01)
 
 loss_list = []
 
+model.train()
 
-def train(dataloader, epochs):
-    # 请确保 数据和模型是在 传入训练之前送入正确的设备中
+
+def train(dataloader, epochs, device, writer):
+    model.to(device)
     for epoch in tqdm(range(epochs), desc="epoch"):
-        for data, _ in dataloader:
+        run_loss = 0.0
+        for i, data in enumerate(dataloader):
             optimizer.zero_grad()
-            data = data.view(-1, 784)
+            x, y = data
+            data = x.view(-1, 784)
+            data = data.to(device)
             output = model(data)
             loss = F.mse_loss(output, data)
             loss.backward()
             optimizer.step()
+            run_loss += loss.item()
 
-        loss_list.append(loss.item())
+        loss_list.append(run_loss / (i + 1))
+        writer.add_scalar('Loss/train', run_loss / (i + 1), epoch)
     print("line done!")
+    return loss_list
+
+
+def one_train(dataloader, device):
+    model.to(device)
+    run_loss = 0.0
+    for i, data in enumerate(dataloader):
+        optimizer.zero_grad()
+        x, y = data
+        data = x.view(-1, 784)
+        data = data.to(device)
+        output = model(data)
+        loss = F.mse_loss(output, data)
+        loss.backward()
+        optimizer.step()
+        run_loss += loss.item()
+    return run_loss / (i + 1)
