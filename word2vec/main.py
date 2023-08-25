@@ -45,12 +45,11 @@ class Word2Vec(nn.Module):
     def __init__(self, vocab_size, embed_size):
         super(Word2Vec, self).__init__()
         self.in_embedding = nn.Embedding(vocab_size, embed_size)
-        self.out_embedding = nn.Embedding(vocab_size, embed_size)
+        self.out_embedding = nn.Linear(embed_size, vocab_size)
 
-    def forward(self, center_idx, context_idx):
+    def forward(self, center_idx):
         center_embed = self.in_embedding(center_idx)
-        context_embed = self.out_embedding(context_idx)
-        scores = torch.mul(center_embed, context_embed).sum(dim=-1)
+        scores = self.out_embedding(center_embed)
         return scores
 
 
@@ -64,7 +63,8 @@ def train(model, data_loader, epochs, learning_rate):
             center_idx = center_idx.to(device)
             context_idx = context_idx.to(device)
 
-            scores = model(center_idx, context_idx)
+            # 修改这一行。将上下文索引移除，输入仅包含中心词索引。
+            scores = model(center_idx)
             loss = criterion(scores, context_idx)
 
             optimizer.zero_grad()
