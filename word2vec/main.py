@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from collections import Counter
 import numpy as np
+import pandas as pd
 
 
 # 构建词汇表和数据集
@@ -76,7 +77,11 @@ def train(model, data_loader, epochs, learning_rate):
 
 
 # 示例文本
-text = "this is a simple example for word2vec using pytorch"
+# text = "this is a simple example for word2vec using pytorch"
+file_path = 'data/text8.train.txt'
+with open(file_path, 'r', encoding='utf-8') as file:
+    # 读取文件内容
+    text = file.read()
 
 # 超参数设置
 window_size = 2
