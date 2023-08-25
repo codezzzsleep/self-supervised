@@ -26,6 +26,7 @@ def train(dataloader, epochs, device, writer):
 
         loss_list.append(run_loss / (i + 1))
         writer.add_scalar('ConvAutoencoderLoss/train', run_loss / (i + 1), epoch)
+
     print("conv done!")
     return loss_list
 
