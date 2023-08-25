@@ -19,7 +19,7 @@ def create_result_folder():
     log_folder = os.path.join(result_folder, 'logs')
     Path(train_folder).mkdir(parents=True, exist_ok=True)
     Path(test_folder).mkdir(parents=True, exist_ok=True)
-    base_path = os.path.join("./runs")
+    base_path = os.path.join("runs")
     return train_folder, test_folder, log_folder, base_path
 
 

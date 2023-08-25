@@ -20,7 +20,7 @@ config = {
 }
 
 train_dataloader = load_data()
-line_model = AutoencoderLinear(config["input_size"], config["hidden_size"]).to(device)
+line_model = AutoencoderLinear().to(device)
 conv_model = AutoencoderConv().to(device)
 
 optimizer = Adam(line_model.parameters(),
@@ -51,7 +51,6 @@ for epoch in tqdm(range(epochs), desc="epoch"):
         optimizer.step()
         optimizer_conv.step()
     print()
-    print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss_line.item():.4f}")
     auto_line_loss.append(loss_line.item())
     auto_cov_loss.append(loss_conv.item())
 
