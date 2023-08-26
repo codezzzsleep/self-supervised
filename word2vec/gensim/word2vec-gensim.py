@@ -31,14 +31,14 @@ model = word2vec.Word2Vec.load('text8_word2vec.model')
 print("计算两个词的相似度/相关程度")
 word1 = 'man'
 word2 = 'woman'
-result1 = model.similarity(word1, word2)
+result1 = model.wv.similarity(word1, word2)
 print(word1 + "和" + word2 + "的相似度为：", result1)
 print("\n================================")
 
 # 计算某个词的相关词列表
 print("计算某个词的相关词列表")
 word = 'bad'
-result2 = model.most_similar(word, topn=10)  # 10个最相关的
+result2 = model.wv.most_similar(word, topn=10)  # 10个最相关的
 print("和" + word + "最相关的词有：")
 for item in result2:
     print(item[0], item[1])
@@ -47,7 +47,7 @@ print("\n================================")
 # 寻找对应关系
 print("寻找对应关系")
 print(' "boy" is to "father" as "girl" is to ...? ')
-result3 = model.most_similar(['girl', 'father'], ['boy'], topn=3)
+result3 = model.wv.most_similar(['girl', 'father'], ['boy'], topn=3)
 for item in result3:
     print(item[0], item[1])
 print("\n")
@@ -55,20 +55,20 @@ print("\n")
 more_examples = ["she her he", "small smaller bad", "going went being"]
 for example in more_examples:
     a, b, x = example.split()
-    predicted = model.most_similar([x, b], [a])[0][0]
+    predicted = model.wv.most_similar([x, b], [a])[0][0]
     print("'%s' is to '%s' as '%s' is to '%s'" % (a, b, x, predicted))
 print("\n================================")
 
 # 寻找不合群的词
 print("寻找不合群的词")
-result4 = model.doesnt_match("flower grass pig tree".split())
+result4 = model.wv.doesnt_match("flower grass pig tree".split())
 print("不合群的词：", result4)
 print("\n================================")
 
 # 查看词向量（只在model中保留中的词）
 print("查看词向量（只在model中保留中的词）")
 word = 'girl'
-print(word, model[word])
+print(word, model.wv[word])
 # for word in model.wv.vocab.keys():  # 查看所有单词
 #     print(word, model[word])
 
@@ -81,5 +81,5 @@ more_sentences = [
     ['Advanced', 'users', 'can', 'load', 'a', 'model', 'and', 'continue', 'training', 'it', 'with', 'more',
      'sentences']]
 model.build_vocab(more_sentences, update=True)
-model.train(more_sentences, total_examples=model.corpus_count, epochs=model.iter)
+model.train(more_sentences, total_examples=model.corpus_count, epochs=model.wv.iter)
 model.save('text8_word2vec.model')
