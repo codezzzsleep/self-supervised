@@ -11,4 +11,4 @@ def load_data(text=None, window_size=None, batch_size=None):
         batch_size = 4
     dataset = SkipGramDataset(text, window_size=window_size)
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    return data_loader, dataset
+    return dataset, data_loader
