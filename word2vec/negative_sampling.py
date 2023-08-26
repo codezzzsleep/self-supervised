@@ -54,7 +54,8 @@ class Word2Vec(nn.Module):
     def negative_sampling(self, scores, context_idx, word_probs):
         n = self.negative_samples
         n_samples = torch.tensor(
-            np.random.choice(len(self.word_to_idx), (scores.shape[0], n), replace=True, p=word_probs)).to(device)
+            np.random.choice(len(self.word_to_idx), (scores.shape[0], n), replace=True, p=word_probs),
+            dtype=torch.long).to(device)  # 将dtype更改为torch.long
 
         out_embeddings = self.out_embedding.weight
 
