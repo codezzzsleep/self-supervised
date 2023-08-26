@@ -44,10 +44,11 @@ class SkipGramDataset(Dataset):
 
 
 class Word2Vec(nn.Module):
-    def __init__(self, vocab_size, embed_size, negative_samples=5):
+    def __init__(self, vocab_size, embed_size, word_to_idx, negative_samples=5):
         super(Word2Vec, self).__init__()
         self.in_embedding = nn.Embedding(vocab_size, embed_size)
         self.out_embedding = nn.Linear(embed_size, vocab_size)
+        self.word_to_idx = word_to_idx
         self.negative_samples = negative_samples
 
     def negative_sampling(self, scores, context_idx, word_probs):
@@ -125,7 +126,8 @@ data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 vocab_size = len(dataset.word_to_idx)
-model = Word2Vec(vocab_size, embed_size, negative_samples)
+model = Word2Vec(vocab_size, embed_size, dataset.word_to_idx, negative_samples)
+
 model.to(device)
 
 train(model, data_loader, dataset, epochs, learning_rate)
