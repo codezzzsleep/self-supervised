@@ -2,55 +2,53 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
+import torch.nn.functional as F
 
-# 定义Word2Vec模型类
-class Word2Vec(nn.Module):
-    def __init__(self, vocab_size, embedding_dim):
-        super(Word2Vec, self).__init__()
-        self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.linear1 = nn.Linear(embedding_dim, vocab_size)
 
-    def forward(self, target):
-        embeds = self.embeddings(target)
-        scores = self.linear1(embeds)
-        log_probs = nn.functional.log_softmax(scores, dim=1)
+# 定义模型
+class SkipGramModel(nn.Module):
+    def __init__(self, vocab_size, embed_size):
+        super(SkipGramModel, self).__init__()
+        self.vocab_size = vocab_size
+        self.embed_size = embed_size
+
+        self.in_embed = nn.Embedding(self.vocab_size, self.embed_size)
+        self.out_embed = nn.Embedding(self.vocab_size, self.embed_size)
+
+    def forward(self, target, context):
+        embed_target = self.in_embed(target)
+        embed_context = self.out_embed(context)
+
+        score = torch.mul(embed_target, embed_context)
+        score = torch.sum(score, dim=1)
+        log_probs = F.log_softmax(score).view(-1)
+
         return log_probs
 
-# 训练函数
-def train(model, data, optimizer):
-    model.train()
+
+# 假设我们有一些预处理的数据
+vocab_size = 1000
+embed_size = 100
+learning_rate = 0.001
+epochs = 10
+
+# 初始化模型和优化器
+model = SkipGramModel(vocab_size, embed_size)
+optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+
+# 训练
+for epoch in range(epochs):
     total_loss = 0
-
-    for context, target in data:
-        context_var = Variable(torch.LongTensor(context))
-        target_var = Variable(torch.LongTensor(target))  # 修改此处
-
-        optimizer.zero_grad()
-        log_probs = model(context_var)
-
-        loss = nn.functional.nll_loss(log_probs, target_var)
+    for batch in range(100):  # 假设我们有100个batch
+        target, context = get_batch()  # 你需要定义get_batch()来获取数据
+        target = Variable(torch.LongTensor(target))
+        context = Variable(torch.LongTensor(context))
+        model.zero_grad()
+        log_probs = model(target, context)
+        loss = F.nll_loss(log_probs, Variable(torch.LongTensor(context)))
         loss.backward()
         optimizer.step()
 
         total_loss += loss.data
 
-    return total_loss.item() / len(data)
-
-# 准备数据
-data = [
-    ([1, 2], [3]),  # 修改此处
-    ([2, 3], [4]),  # 修改此处
-    ([3, 4], [5]),  # 修改此处
-    ([4, 5], [6]),  # 修改此处
-    ([5, 6], [7])   # 修改此处
-]
-
-vocab_size = 8
-embedding_dim = 3
-model = Word2Vec(vocab_size, embedding_dim)
-optimizer = optim.SGD(model.parameters(), lr=0.001)
-
-num_epochs = 100
-for epoch in range(num_epochs):
-    loss = train(model, data, optimizer)
-    print(f"Epoch: {epoch+1}, Loss: {loss}")
+    print("Epoch: " + str(epoch) + ", Loss: " + str(total_loss / 100))
