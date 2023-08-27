@@ -2,6 +2,9 @@
 
 1. AutoEncoder
 
+   1. StackAutoEncoder ()
+   1. Undercomplete Autoencoder
+   1. Sparse Autoencoder
    1. 
 
 2. word2vec

@@ -2,19 +2,35 @@ import torch
 import torch.nn as nn
 
 
-class LinearAutoencoder(nn.Module):
-    """use linear encoder and decoder"""
+class Autoencoder(nn.Module):
+    """
+    基本自编码器
+    """
 
-    def __init__(self):
-        super(LinearAutoencoder, self).__init__()
+    def __init__(self, input_size, hidden_size, LBL=False):
+        """
+
+        :param input_size:输入的尺寸
+        :param hidden_size:中间隐层的尺寸
+        :param LBL:是否是layer by layer 的训练
+        """
+        super(Autoencoder, self).__init__()
+        self.LBL = LBL
         self.encoder = nn.Sequential(
-            nn.Linear(784, 128),
+            nn.Linear(input_size, hidden_size),
             nn.ReLU(),
         )
-        self.decoder = nn.Sequential(
-            nn.Linear(128, 784),
-            nn.Sigmoid()
-        )
+        if not self.LBL:
+
+            self.decoder = nn.Sequential(
+                nn.Linear(hidden_size, input_size),
+                nn.Sigmoid()
+            )
+        else:
+            self.decoder = nn.Sequential(
+                nn.Linear(hidden_size, input_size),
+                nn.ReLU()
+            )
 
     def forward(self, x):
         x = self.encoder(x)
@@ -28,23 +44,37 @@ class LinearAutoencoder(nn.Module):
         return self.decoder(x)
 
 
-class ConvAutoencoder(nn.Module):
-    """use Conv encoder and decoder"""
+class ConvAutoEncoder(nn.Module):
+    """
+    卷积自编码器
+    """
 
-    def __init__(self):
-        super(ConvAutoencoder, self).__init__()
+    def __init__(self, input_channels=1, encoder_channels=[16, 32, 64], decoder_channels=[32, 16]):
+        """
+
+        :param input_channels:输入数据的通道数,default=1
+        :param encoder_channels:需要一个列表,default=[16,32,64]
+        :param decoder_channels:需要一个列表,default=[32,16]
+        """
+        super(ConvAutoEncoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(1, 16, 3, stride=2, padding=1),  # (1, 28, 28) -> (16, 14, 14)
+            nn.Conv2d(input_channels, encoder_channels[0], kernel_size=3, stride=2, padding=1),
+            # (1, 28, 28) -> (16, 14, 14)
             nn.ReLU(),
-            nn.Conv2d(16, 32, 3, stride=3, padding=1),  # (16, 14, 14) -> (32, 5, 5)
-            nn.ReLU()
+            nn.Conv2d(encoder_channels[0], encoder_channels[1], kernel_size=3, stride=2, padding=1),
+            # (16, 14, 14) -> (32, 7, 7)
+            nn.ReLU(),
+            nn.Conv2d(encoder_channels[1], encoder_channels[2], kernel_size=3),  # (32, 7, 7) -> (64, 5, 5)
         )
-
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, 3, stride=3, padding=1, output_padding=1),  # (32, 5, 5) -> (16, 15, 15)
+            nn.ConvTranspose2d(encoder_channels[2], decoder_channels[0], kernel_size=3),  # (64, 5, 5) -> (32, 7, 7)
             nn.ReLU(),
-            nn.ConvTranspose2d(16, 1, 3, stride=2, padding=1, output_padding=1),  # (16, 15, 15) -> (1, 28, 28)
-            nn.Sigmoid(),
+            nn.ConvTranspose2d(decoder_channels[0], decoder_channels[1], kernel_size=3, stride=2, padding=1,
+                               output_padding=1),  # (32, 7, 7) -> (16, 14, 14)
+            nn.ReLU(),
+            nn.ConvTranspose2d(decoder_channels[1], input_channels, kernel_size=3, stride=2, padding=1,
+                               output_padding=1),  # (16, 14, 14) -> (1, 28, 28)
+            nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -60,30 +90,38 @@ class ConvAutoencoder(nn.Module):
 
 
 class StackedAutoEncoder(nn.Module):
-    """堆栈自动编码器--没有使用逐层训练策略"""
+    """
+    堆栈自动编码器 -- 非逐层训练策略
+    """
 
-    def __init__(self):
+    def __init__(self, input_size=784,
+                 encoder_sizes=[128, 64, 32],
+                 decoder_sizes=[64, 128]):
+        """
+
+        :param input_size:
+        :param encoder_sizes:
+        :param decoder_sizes:
+        """
         super(StackedAutoEncoder, self).__init__()
 
-        # Encoding layers
-        self.encoder = nn.Sequential(
-            nn.Linear(28 * 28, 128),  # (784, 128)
-            nn.ReLU(True),
-            nn.Linear(128, 64),  # (128, 64)
-            nn.ReLU(True),
-            nn.Linear(64, 32),  # (64, 32)
-            nn.ReLU(True)
-        )
+        encoder_layers = []
+        previous_size = input_size
+        for size in encoder_sizes:
+            encoder_layers.append(nn.Linear(previous_size, size))
+            encoder_layers.append(nn.ReLU())
+            previous_size = size
+        self.encoder = nn.Sequential(*encoder_layers)
 
-        # Decoding layers
-        self.decoder = nn.Sequential(
-            nn.Linear(32, 64),  # (32, 64)
-            nn.ReLU(True),
-            nn.Linear(64, 128),  # (64, 128)
-            nn.ReLU(True),
-            nn.Linear(128, 28 * 28),  # (128, 784)
-            nn.Sigmoid()
-        )
+        decoder_layers = []
+        previous_size = encoder_sizes[-1]
+        for size in decoder_sizes:
+            decoder_layers.append(nn.Linear(previous_size, size))
+            decoder_layers.append(nn.ReLU())
+            previous_size = size
+        decoder_layers.append(nn.Linear(previous_size, input_size))
+        decoder_layers.append(nn.Sigmoid())
+        self.decoder = nn.Sequential(*decoder_layers)
 
     def forward(self, x):
         x = self.encoder(x)
@@ -97,30 +135,10 @@ class StackedAutoEncoder(nn.Module):
         return self.decoder(x)
 
 
-class AutoEncoder(nn.Module):
-    """单层的模型，适应逐层训练策略"""
-
-    def __init__(self, input_size, hidden_size):
-        super(AutoEncoder, self).__init__()
-
-        self.encoder = nn.Sequential(
-            nn.Linear(input_size, hidden_size),
-            nn.ReLU(True)
-        )
-
-        self.decoder = nn.Sequential(
-            nn.Linear(hidden_size, input_size),
-            nn.ReLU(True)
-        )
-
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
-
-
 class StackedAutoEncoderPro(nn.Module):
-    """不参与训练，在单层训练完成后，集成使用"""
+    """
+    堆栈自动编码器 -- 逐层训练策略
+    """
 
     def __init__(self, autoencoders):
         super(StackedAutoEncoderPro, self).__init__()
@@ -141,6 +159,12 @@ class StackedAutoEncoderPro(nn.Module):
         x = self.encoder(x)
         x = self.decoder(x)
         return x
+
+    def encode(self, x):
+        return self.encoder(x)
+
+    def decode(self, x):
+        return self.decoder(x)
 
 
 class MyLeNet5(nn.Module):
