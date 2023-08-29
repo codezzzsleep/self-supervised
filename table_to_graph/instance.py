@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
+import torch
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from torch_geometric.data import Data
+import networkx as nx
+import matplotlib.pyplot as plt
 
 cites_table = pd.read_csv("data/cites.csv")
 paper_table = pd.read_csv("data/paper.csv")
@@ -57,9 +61,30 @@ node_features = encoder.fit_transform(content_table['word_cited_id'].values.resh
 # Encode class labels using label encoding
 label_encoder = LabelEncoder()
 node_labels = label_encoder.fit_transform(paper_table['class_label'])
-print(node_features)
-print(node_features.shape)
-print(1)
-print(node_labels)
-print(len(node_labels))
-print(max(node_labels))
+# print(node_features.shape)
+# print(len(node_labels))
+# non_zero_count = np.count_nonzero(node_features, axis=0)
+# print(non_zero_count)
+# print(len(adjacency_matrix.row))
+# print(np.count_nonzero(adjacency_matrix.col))
+y = torch.LongTensor(node_labels)
+x = torch.FloatTensor(node_features)
+edge_index = torch.LongTensor(np.vstack((adjacency_matrix.row, adjacency_matrix.col)))
+data = Data(x=x, edge_index=edge_index, y=y)
+edges = data.edge_index.t().tolist()
+graph = nx.DiGraph()
+graph.add_edges_from(edges)
+
+# If you would like to convert it to an undirected graph, you can use this
+# graph = graph.to_undirected()
+
+# 可视化
+nx.draw(
+    graph,
+    node_color='green',
+    edge_color='black',
+    node_size=30,
+    width=0.2,
+)
+# plt.savefig("planetoid_cora_visual.png")
+plt.show()

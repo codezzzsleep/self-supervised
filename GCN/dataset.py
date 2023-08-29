@@ -23,3 +23,6 @@ if __name__ == "__main__":
     print(len(dataset))
     print(dataset.num_node_features)
     print(dataset.num_classes)
+    print(data.y)
+    print(data.x)
+    print(data)

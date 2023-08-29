@@ -3,6 +3,7 @@ import pandas as pd
 import scipy.sparse as sp
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from collections.abc import Iterable
+from torch_geometric.data import Data
 
 edge = pd.read_csv("data/cites.csv")
 lable = pd.read_csv("data/paper.csv")
@@ -24,11 +25,12 @@ def create_graph_from_table(vertices_data, edge, lable, normalize=False):
         pass
     # Encode node features using one-hot encoding
     encoder = OneHotEncoder()
-    node_features = encoder.fit_transform(content_table['word_cited_id'].values.reshape(-1, 1)).toarray()
+    node_features = encoder.fit_transform(data).toarray()
 
     # Encode class labels using label encoding
     label_encoder = LabelEncoder()
-    node_labels = label_encoder.fit_transform(paper_table['class_label'])
+    node_labels = label_encoder.fit_transform(lable)
+    return Data(x=node_features, edge_index=adjacency_matrix, y=node_labels)
 
 
 if __name__ == "__main__":
