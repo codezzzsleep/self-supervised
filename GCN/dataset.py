@@ -21,5 +21,5 @@ if __name__ == "__main__":
     dataset = load_dataset()
     print(dataset)
     print(len(dataset))
-    print(dataset.num_features)
+    print(dataset.num_node_features)
     print(dataset.num_classes)
