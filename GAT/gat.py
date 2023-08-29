@@ -6,6 +6,7 @@ from torch_geometric.datasets import Planetoid
 from torch_geometric.utils import to_dense_adj, add_self_loops
 from torch_geometric.transforms import NormalizeFeatures
 
+
 # 定义 GAT 层
 class GATLayer(nn.Module):
     def __init__(self, in_features, out_features, alpha=0.2, dropout=0.6):
@@ -50,13 +51,15 @@ class GATLayer(nn.Module):
         all_combinations_matrix = torch.cat([Wh_repeated_in_chunks, Wh_repeated_alternating], dim=1)
         return all_combinations_matrix.view(N, N, 2 * self.out_features)
 
+
 # 定义 GAT 模型
 class GATModel(nn.Module):
     def __init__(self, n_feat, n_hid, n_classes, n_heads, alpha=0.2, dropout=0.6):
         super(GATModel, self).__init__()
 
         self.heads = n_heads
-        self.GAT_layers = nn.ModuleList([GATLayer(in_features=n_feat, out_features=n_hid, alpha=alpha, dropout=dropout) for _ in range(n_heads)])
+        self.GAT_layers = nn.ModuleList(
+            [GATLayer(in_features=n_feat, out_features=n_hid, alpha=alpha, dropout=dropout) for _ in range(n_heads)])
         self.final_layer = GATLayer(in_features=n_heads * n_hid, out_features=n_classes, alpha=alpha, dropout=dropout)
 
     def forward(self, x, adj):
@@ -85,6 +88,7 @@ model = GATModel(n_feat, n_hid, n_classes, n_heads).to(device)
 loss_func = nn.NLLLoss().to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.005, weight_decay=5e-4)
 
+
 # 训练循环
 def train_loop(epoch, model, optimizer, data, adj, loss_func):
     model.train()
@@ -101,11 +105,13 @@ def train_loop(epoch, model, optimizer, data, adj, loss_func):
     print("Epoch: {:03d}".format(epoch), end=" - ")
     print("Train Loss: {:.4f}, Train Acc: {:.4f}, Val Acc: {:.4f}".format(loss.item(), train_acc, val_acc))
 
+
 # 计算准确率
 def accuracy(output, mask):
     pred = output[mask].max(dim=1)[1]
     acc = pred.eq(data.y[mask]).sum().item() / mask.sum().item()
     return acc
+
 
 # 训练 GAT 模型
 num_epochs = 200
