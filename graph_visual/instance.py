@@ -19,8 +19,8 @@ graph.add_edges_from(edges)
 # 可视化
 nx.draw(
     graph,
-    node_color='skyblue',
-    edge_color='grey',
+    node_color='green',
+    edge_color='black',
     node_size=30,
     width=0.2,
 )
