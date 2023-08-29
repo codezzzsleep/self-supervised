@@ -24,4 +24,5 @@ nx.draw(
     node_size=30,
     width=0.2,
 )
+plt.savefig("planetoid_cora_visual.png")
 plt.show()
