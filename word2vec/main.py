@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 import utils
 from net import Word2Vec
-from train import train
+from skipgram_train import train
 
 # 超参数设置
 window_size = 2

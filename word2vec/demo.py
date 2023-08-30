@@ -1,11 +1,10 @@
-import numpy as np
-import torch
-from torch.autograd import Variable
-import torch.nn as nn
-
-import torch.optim as optim
-from net import CBOW, SkipGram
 import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
+from net import CBOW, SkipGram
 
 torch.manual_seed(1)
 # 窗口值为2
@@ -62,43 +61,43 @@ def create_skipgram_dataset(text):
     return data
 
 
-cbow_train = create_cbow_dataset(text)
-skipgram_train = create_skipgram_dataset(text)
+class CBOW(nn.Module):
+    def __init__(self, vocab_size, embd_size, context_size, hidden_size):
+        super(CBOW, self).__init__()
+        self.embeddings = nn.Embedding(vocab_size, embd_size)
+        self.linear1 = nn.Linear(2 * context_size * embd_size, hidden_size)
+        self.linear2 = nn.Linear(hidden_size, vocab_size)
+
+    def forward(self, inputs):
+        embedded = self.embeddings(inputs).view((1, -1))
+        hid = F.relu(self.linear1(embedded))
+        out = self.linear2(hid)
+        log_probs = F.log_softmax(out)
+        return log_probs
+
+
+class SkipGram(nn.Module):
+    def __init__(self, vocab_size, embd_size):
+        super(SkipGram, self).__init__()
+        self.embeddings = nn.Embedding(vocab_size, embd_size)
+
+    def forward(self, focus, context):
+        embed_focus = self.embeddings(focus).view((1, -1))
+        embed_ctx = self.embeddings(context).view((1, -1))
+        score = torch.mm(embed_focus, torch.t(embed_ctx))
+        log_probs = F.logsigmoid(score)
+
+        return log_probs
+
+
+cbow_train_data = create_cbow_dataset(text)
+skipgram_train_data = create_skipgram_dataset(text)
 print("cbow data")
-for item in cbow_train:
+for item in cbow_train_data:
     print(item)
 print("skip gram")
-for item in skipgram_train:
+for item in skipgram_train_data:
     print(item)
-
-# class CBOW(nn.Module):
-#     def __init__(self, vocab_size, embd_size, context_size, hidden_size):
-#         super(CBOW, self).__init__()
-#         self.embeddings = nn.Embedding(vocab_size, embd_size)
-#         self.linear1 = nn.Linear(2 * context_size * embd_size, hidden_size)
-#         self.linear2 = nn.Linear(hidden_size, vocab_size)
-#
-#     def forward(self, inputs):
-#         embedded = self.embeddings(inputs).view((1, -1))
-#         hid = F.relu(self.linear1(embedded))
-#         out = self.linear2(hid)
-#         log_probs = F.log_softmax(out, dim=1)
-#         return log_probs
-#
-#
-# class SkipGram(nn.Module):
-#     def __init__(self, vocab_size, embd_size):
-#         super(SkipGram, self).__init__()
-#         self.embeddings = nn.Embedding(vocab_size, embd_size)
-#
-#     def forward(self, focus, context):
-#         embed_focus = self.embeddings(focus).view((1, -1))
-#         embed_ctx = self.embeddings(context).view((1, -1))
-#         score = torch.mm(embed_focus, torch.t(embed_ctx))
-#         log_probs = F.logsigmoid(score)
-#
-#         return log_probs
-
 
 embd_size = 50
 learning_rate = 0.001
@@ -115,14 +114,14 @@ def train_cbow():
 
     for epoch in range(n_epoch):
         total_loss = .0
-        for context, target in cbow_train:
+        for context, target in cbow_train_data:
             ctx_idxs = [w2i[w] for w in context]
-            ctx_var = Variable(torch.LongTensor(ctx_idxs))
+            ctx_var = torch.LongTensor(ctx_idxs)
 
             model.zero_grad()
             log_probs = model(ctx_var)
 
-            loss = loss_fn(log_probs, Variable(torch.LongTensor([w2i[target]])))
+            loss = loss_fn(log_probs, torch.LongTensor([w2i[target]]))
 
             loss.backward()
             optimizer.step()
@@ -141,13 +140,13 @@ def train_skipgram():
 
     for epoch in range(n_epoch):
         total_loss = .0
-        for in_w, out_w, target in skipgram_train:
-            in_w_var = Variable(torch.LongTensor([w2i[in_w]]))
-            out_w_var = Variable(torch.LongTensor([w2i[out_w]]))
+        for in_w, out_w, target in skipgram_train_data:
+            in_w_var = torch.LongTensor([w2i[in_w]])
+            out_w_var = torch.LongTensor([w2i[out_w]])
 
             model.zero_grad()
             log_probs = model(in_w_var, out_w_var)
-            loss = loss_fn(log_probs[0], Variable(torch.Tensor([target])))
+            loss = loss_fn(log_probs[0], torch.Tensor([target]))
 
             loss.backward()
             optimizer.step()
@@ -168,7 +167,7 @@ def test_cbow(test_data, model):
     correct_ct = 0
     for ctx, target in test_data:
         ctx_idxs = [w2i[w] for w in ctx]
-        ctx_var = Variable(torch.LongTensor(ctx_idxs))
+        ctx_var = torch.LongTensor(ctx_idxs)
 
         model.zero_grad()
         log_probs = model(ctx_var)
@@ -186,8 +185,8 @@ def test_skipgram(test_data, model):
     print('====Test SkipGram===')
     correct_ct = 0
     for in_w, out_w, target in test_data:
-        in_w_var = Variable(torch.LongTensor([w2i[in_w]]))
-        out_w_var = Variable(torch.LongTensor([w2i[out_w]]))
+        in_w_var = torch.LongTensor([w2i[in_w]])
+        out_w_var = torch.LongTensor([w2i[out_w]])
 
         model.zero_grad()
         log_probs = model(in_w_var, out_w_var)
@@ -199,9 +198,9 @@ def test_skipgram(test_data, model):
     print('Accuracy: {:.1f}% ({:d}/{:d})'.format(correct_ct / len(test_data) * 100, correct_ct, len(test_data)))
 
 
-test_cbow(cbow_train, cbow_model)
+test_cbow(cbow_train_data, cbow_model)
 print('------')
-test_skipgram(skipgram_train, sg_model)
+test_skipgram(skipgram_train_data, sg_model)
 
 x = list(range(1, n_epoch + 1))
 plt.plot(x, cbow_losses)

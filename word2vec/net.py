@@ -1,5 +1,5 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 
@@ -16,29 +16,28 @@ class Word2Vec(nn.Module):
 
 
 class CBOW(nn.Module):
-    def __init__(self, vocab_size, embd_size, context_size, hidden_size):
+    def __init__(self, vocab_size, embedding_dim, context_size, hidden_dim):
         super(CBOW, self).__init__()
-        self.embeddings = nn.Embedding(vocab_size, embd_size)
-        self.linear1 = nn.Linear(2 * context_size * embd_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, vocab_size)
+        self.embedding_layer = nn.Embedding(vocab_size, embedding_dim)
+        self.linear1 = nn.Linear(embedding_dim, hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, vocab_size)
 
-    def forward(self, inputs):
-        embedded = self.embeddings(inputs).view((1, -1))
-        hid = F.relu(self.linear1(embedded))
-        out = self.linear2(hid)
-        log_probs = F.log_softmax(out, dim=1)
+    def forward(self, context_word_indexes):
+        embeddings = torch.mean(self.embedding_layer(context_word_indexes), dim=1)
+        h1 = torch.relu(self.linear1(embeddings))
+        out = self.linear2(h1)
+        log_probs = torch.log_softmax(out, dim=1)
         return log_probs
 
 
 class SkipGram(nn.Module):
-    def __init__(self, vocab_size, embd_size):
+    def __init__(self, vocab_size, embedding_dim):
         super(SkipGram, self).__init__()
-        self.embeddings = nn.Embedding(vocab_size, embd_size)
+        self.embeddings = nn.Embedding(vocab_size, embedding_dim)
+        self.linear = nn.Linear(embedding_dim, vocab_size)
 
-    def forward(self, focus, context):
-        embed_focus = self.embeddings(focus).view((1, -1))
-        embed_ctx = self.embeddings(context).view((1, -1))
-        score = torch.mm(embed_focus, torch.t(embed_ctx))
-        log_probs = F.logsigmoid(score)
-
+    def forward(self, center_word):
+        embeds = self.embeddings(center_word)
+        out = self.linear(embeds)
+        log_probs = torch.log_softmax(out, dim=1)
         return log_probs
