@@ -22,11 +22,12 @@ print(vocab)
 w2i = {w: i for i, w in enumerate(vocab)}
 i2w = {i: w for i, w in enumerate(vocab)}
 print("word2index")
-for item in w2i:
-    print(item)
+for key in sorted(w2i.keys()):
+    print(f"{key}: {w2i[key]}")
+
 print("index2word")
-for item in i2w:
-    print(item)
+for key in sorted(i2w.keys()):
+    print(f"{key}: {i2w[key]}")
 
 
 # context window size is two
