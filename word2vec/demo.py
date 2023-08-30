@@ -17,15 +17,15 @@ we conjure the spirits of the computer with our spells.""".split()
 vocab = set(text)
 vocab_size = len(vocab)
 print('vocab_size:', vocab_size)
-print(vocab)
+
 # 使用字典推导式
 w2i = {w: i for i, w in enumerate(vocab)}
 i2w = {i: w for i, w in enumerate(vocab)}
-print("word2index")
+print("===============  word2index  ===============")
 for key in sorted(w2i.keys()):
     print(f"{key}: {w2i[key]}")
 
-print("index2word")
+print("===============  index2word  ===============")
 for key in sorted(i2w.keys()):
     print(f"{key}: {i2w[key]}")
 
