@@ -1,8 +1,11 @@
+import numpy as np
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
-import torch.nn.functional as F
+
 import torch.optim as optim
+from net import CBOW, SkipGram
+import matplotlib.pyplot as plt
 
 torch.manual_seed(1)
 # 窗口值为2
@@ -49,7 +52,7 @@ def create_skipgram_dataset(text):
         data.append((text[i], text[i - 1], 1))
         data.append((text[i], text[i + 1], 1))
         data.append((text[i], text[i + 2], 1))
-        # negative sampling
+        # 随机负采样 这里是4个，但是 应该为一个 超参数
         for _ in range(4):
             if random.random() < 0.5 or i >= len(text) - 3:
                 rand_id = random.randint(0, i - 1)
@@ -68,43 +71,42 @@ print("skip gram")
 for item in skipgram_train:
     print(item)
 
+# class CBOW(nn.Module):
+#     def __init__(self, vocab_size, embd_size, context_size, hidden_size):
+#         super(CBOW, self).__init__()
+#         self.embeddings = nn.Embedding(vocab_size, embd_size)
+#         self.linear1 = nn.Linear(2 * context_size * embd_size, hidden_size)
+#         self.linear2 = nn.Linear(hidden_size, vocab_size)
+#
+#     def forward(self, inputs):
+#         embedded = self.embeddings(inputs).view((1, -1))
+#         hid = F.relu(self.linear1(embedded))
+#         out = self.linear2(hid)
+#         log_probs = F.log_softmax(out, dim=1)
+#         return log_probs
+#
+#
+# class SkipGram(nn.Module):
+#     def __init__(self, vocab_size, embd_size):
+#         super(SkipGram, self).__init__()
+#         self.embeddings = nn.Embedding(vocab_size, embd_size)
+#
+#     def forward(self, focus, context):
+#         embed_focus = self.embeddings(focus).view((1, -1))
+#         embed_ctx = self.embeddings(context).view((1, -1))
+#         score = torch.mm(embed_focus, torch.t(embed_ctx))
+#         log_probs = F.logsigmoid(score)
+#
+#         return log_probs
 
-class CBOW(nn.Module):
-    def __init__(self, vocab_size, embd_size, context_size, hidden_size):
-        super(CBOW, self).__init__()
-        self.embeddings = nn.Embedding(vocab_size, embd_size)
-        self.linear1 = nn.Linear(2 * context_size * embd_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, vocab_size)
 
-    def forward(self, inputs):
-        embedded = self.embeddings(inputs).view((1, -1))
-        hid = F.relu(self.linear1(embedded))
-        out = self.linear2(hid)
-        log_probs = F.log_softmax(out, dim=1)
-        return log_probs
-
-
-class SkipGram(nn.Module):
-    def __init__(self, vocab_size, embd_size):
-        super(SkipGram, self).__init__()
-        self.embeddings = nn.Embedding(vocab_size, embd_size)
-
-    def forward(self, focus, context):
-        embed_focus = self.embeddings(focus).view((1, -1))
-        embed_ctx = self.embeddings(context).view((1, -1))
-        score = torch.mm(embed_focus, torch.t(embed_ctx))
-        log_probs = F.logsigmoid(score)
-
-        return log_probs
-
-
-embd_size = 100
+embd_size = 50
 learning_rate = 0.001
 n_epoch = 30
 
 
 def train_cbow():
-    hidden_size = 64
+    hidden_size = 10
     losses = []
     loss_fn = nn.NLLLoss()
     model = CBOW(vocab_size, embd_size, CONTEXT_SIZE, hidden_size)
@@ -201,15 +203,9 @@ test_cbow(cbow_train, cbow_model)
 print('------')
 test_skipgram(skipgram_train, sg_model)
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-
-def showPlot(points, title):
-    plt.figure()
-    fig, ax = plt.subplots()
-    plt.plot(points)
-
-
-showPlot(cbow_losses, 'CBOW Losses')
-showPlot(sg_losses, 'SkipGram Losses')
+x = list(range(1, n_epoch + 1))
+plt.plot(x, cbow_losses)
+plt.show()
+plt.plot(x, sg_losses)
+# showPlot(cbow_losses, 'CBOW Losses')
+# showPlot(sg_losses, 'SkipGram Losses')
