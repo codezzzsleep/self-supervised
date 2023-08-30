@@ -5,7 +5,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 torch.manual_seed(1)
-CONTEXT_SIZE = 2  # 2 words to the left, 2 to the right
+# 2 words to the left, 2 to the right
+CONTEXT_SIZE = 2
 text = """We are about to study the idea of a computational process.
 Computational processes are abstract beings that inhabit computers.
 As they evolve, processes manipulate other abstract things called data.
@@ -13,17 +14,19 @@ The evolution of a process is directed by a pattern of rules
 called a program. People create programs to direct processes. In effect,
 we conjure the spirits of the computer with our spells.""".split()
 
-split_ind = (int)(len(text) * 0.8)
-
-# By deriving a set from `raw_text`, we deduplicate the array
 vocab = set(text)
 vocab_size = len(vocab)
 print('vocab_size:', vocab_size)
 print(vocab)
+# 使用字典推导式
 w2i = {w: i for i, w in enumerate(vocab)}
 i2w = {i: w for i, w in enumerate(vocab)}
-print(w2i)
-print(i2w)
+print("word2index")
+for item in w2i:
+    print(item)
+print("index2word")
+for item in i2w:
+    print(item)
 
 
 # context window size is two
