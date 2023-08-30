@@ -19,9 +19,11 @@ split_ind = (int)(len(text) * 0.8)
 vocab = set(text)
 vocab_size = len(vocab)
 print('vocab_size:', vocab_size)
-
+print(vocab)
 w2i = {w: i for i, w in enumerate(vocab)}
 i2w = {i: w for i, w in enumerate(vocab)}
+print(w2i)
+print(i2w)
 
 
 # context window size is two
