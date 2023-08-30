@@ -42,7 +42,7 @@ class GraphAutoencoder(nn.Module):
         return adj_pred
 
 
-dataset = Planetoid(root='/tmp/Cora', name='Cora')
+dataset = Planetoid(root='data/Cora', name='Cora')
 data = dataset[0]
 
 # 为了训练图自编码器，我们需要通过移除部分边来创建训练和验证集
