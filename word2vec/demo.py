@@ -5,15 +5,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 torch.manual_seed(1)
-# 2 words to the left, 2 to the right
+# 窗口值为2
 CONTEXT_SIZE = 2
-text = """We are about to study the idea of a computational process.
-Computational processes are abstract beings that inhabit computers.
-As they evolve, processes manipulate other abstract things called data.
-The evolution of a process is directed by a pattern of rules
-called a program. People create programs to direct processes. In effect,
-we conjure the spirits of the computer with our spells.""".split()
-
+# text = """We are about to study the idea of a computational process.
+# Computational processes are abstract beings that inhabit computers.
+# As they evolve, processes manipulate other abstract things called data.
+# The evolution of a process is directed by a pattern of rules
+# called a program. People create programs to direct processes. In effect,
+# we conjure the spirits of the computer with our spells.""".split()
+text = "I love reading books She enjoys watching movies".split()
 vocab = set(text)
 vocab_size = len(vocab)
 print('vocab_size:', vocab_size)
@@ -61,8 +61,12 @@ def create_skipgram_dataset(text):
 
 cbow_train = create_cbow_dataset(text)
 skipgram_train = create_skipgram_dataset(text)
-print('cbow sample', cbow_train[0])
-print('skipgram sample', skipgram_train[0])
+print("cbow data")
+for item in cbow_train:
+    print(item)
+print("skip gram")
+for item in skipgram_train:
+    print(item)
 
 
 class CBOW(nn.Module):
