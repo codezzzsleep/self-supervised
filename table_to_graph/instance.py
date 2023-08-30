@@ -56,17 +56,20 @@ print(len(adjacency_matrix.data))
 
 # Encode node features using one-hot encoding
 encoder = OneHotEncoder()
-node_features = encoder.fit_transform(content_table['word_cited_id'].values.reshape(-1, 1)).toarray()
+encoded_data = encoder.fit_transform(content_table['word_cited_id'].values.reshape(-1, 1))
+# 将独热编码数据添加回原始 DataFrame
+print(type(encoded_data))
+content_table_encoded = pd.concat(
+    [content_table, pd.DataFrame(encoded_data.toarray(), columns=encoder.get_feature_names_out(['word_cited_id']))],
+    axis=1)
 
+# 对每个paper_id进行聚合操作，将向量相加
+aggregated_node_features = content_table_encoded.groupby('paper_id').sum().reset_index().drop(columns=['word_cited_id'])
+node_features = aggregated_node_features.drop(columns=['paper_id']).values
 # Encode class labels using label encoding
 label_encoder = LabelEncoder()
 node_labels = label_encoder.fit_transform(paper_table['class_label'])
-# print(node_features.shape)
-# print(len(node_labels))
-# non_zero_count = np.count_nonzero(node_features, axis=0)
-# print(non_zero_count)
-# print(len(adjacency_matrix.row))
-# print(np.count_nonzero(adjacency_matrix.col))
+
 y = torch.LongTensor(node_labels)
 x = torch.FloatTensor(node_features)
 edge_index = torch.LongTensor(np.vstack((adjacency_matrix.row, adjacency_matrix.col)))
@@ -88,3 +91,5 @@ nx.draw(
 )
 # plt.savefig("planetoid_cora_visual.png")
 plt.show()
+# print(data)
+# print(x)
