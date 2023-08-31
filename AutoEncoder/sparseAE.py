@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
 
 
@@ -58,7 +59,7 @@ batch_size = 64
 learning_rate = 0.0001
 # Configure device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+writer = SummaryWriter("runs/sp_log")
 # MNIST dataset
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
 train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
@@ -74,7 +75,8 @@ rho = 0.05
 beta = 3.
 
 for epoch in range(epochs):
-    for data in dataloader:
+    running_loss = 0.
+    for i, data in enumerate(dataloader):
         inputs, _ = data
         inputs = inputs.view(inputs.size(0), -1).to(device)
 
@@ -83,7 +85,7 @@ for epoch in range(epochs):
         # Forward pass
         decoder_outputs = sparse_ae(inputs)
         reconstruction_loss = criterion(decoder_outputs, inputs)
-
+        running_loss += reconstruction_loss.item()
         encoder_outputs = sparse_ae.encoder(inputs)
         kl_loss = kl_divergence_loss(encoder_outputs, rho, inputs.size(0))
 
@@ -93,5 +95,5 @@ for epoch in range(epochs):
         # Backward pass
         total_loss.backward()
         optimizer.step()
-
+    writer.add_scalar("Loss/train", running_loss / (i + 1), epoch)
     print(f"Epoch [{epoch + 1}/{epochs}], Loss: {total_loss:.4f}")
