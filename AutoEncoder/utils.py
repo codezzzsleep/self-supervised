@@ -1,8 +1,9 @@
-import torch
-import numpy as np
-import time
 import os
+import time
 from pathlib import Path
+
+import numpy as np
+import torch
 
 
 def save_model(model, path):
