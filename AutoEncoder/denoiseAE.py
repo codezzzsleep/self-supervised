@@ -81,3 +81,4 @@ for epoch in range(num_epochs):
             step = step * step
     writer.add_scalar("Loss_epoch/train", running_loss / i, epoch + 1)
     print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+writer.close()
