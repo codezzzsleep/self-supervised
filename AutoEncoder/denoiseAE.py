@@ -76,8 +76,8 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         if epoch == step:
-            writer.add_image(f"noise_imgae_{step}", noisy_images, step)
-            writer.add_image(f"output_image_{step}", outputs, step)
+            writer.add_image(f"noise_imgae_{step}", noisy_images[0], step)
+            writer.add_image(f"output_image_{step}", outputs[0], step)
             step = step * step
     writer.add_scalar("Loss_epoch/train", running_loss / i, epoch + 1)
     print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
