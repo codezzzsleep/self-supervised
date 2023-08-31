@@ -15,7 +15,10 @@ CONTEXT_SIZE = 2
 # The evolution of a process is directed by a pattern of rules
 # called a program. People create programs to direct processes. In effect,
 # we conjure the spirits of the computer with our spells.""".split()
-text = "I love reading books She enjoys watching movies".split()
+# text = "I love reading books She enjoys watching movies".split()
+file_path = 'data/text8'
+with open(file_path, 'r', encoding='utf-8') as file:
+    text = file.read().split()
 vocab = set(text)
 vocab_size = len(vocab)
 print('vocab_size:', vocab_size)
