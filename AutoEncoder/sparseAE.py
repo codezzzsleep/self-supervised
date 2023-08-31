@@ -21,10 +21,10 @@ class Decoder(nn.Module):
     def __init__(self, hidden_size, output_size):
         super(Decoder, self).__init__()
         self.fc2 = nn.Linear(hidden_size, output_size)
-        self.relu = nn.ReLU()
+        self.activate = nn.LeakyReLU()
 
     def forward(self, x):
-        return self.relu(self.fc2(x))
+        return self.activate(self.fc2(x))
 
 
 # Sparse Autoencoder
@@ -44,7 +44,7 @@ class SparseAutoencoder(nn.Module):
 
 # KL Divergence Loss
 def kl_divergence_loss(encoder_output, rho, batch_size):
-    rho_hat = torch.mean(encoder_output, dim=0)
+    rho_hat = torch.mean(encoder_output, dim=0) + 1e-8  # 在rho_hat上添加一个小数值,防止除0
     kl_loss = torch.sum(rho * torch.log(rho / rho_hat) + (1 - rho) * torch.log((1 - rho) / (1 - rho_hat)))
     return kl_loss / batch_size
 
@@ -55,7 +55,7 @@ hidden_size = 128
 output_size = 784
 epochs = 50
 batch_size = 64
-
+learning_rate = 0.0001
 # Configure device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -66,7 +66,7 @@ dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
 # Creating the model and setting up optimizer and criterion
 sparse_ae = SparseAutoencoder(input_size, hidden_size, output_size).to(device)
-optimizer = optim.Adam(sparse_ae.parameters(), lr=0.001)
+optimizer = optim.Adam(sparse_ae.parameters(), lr=learning_rate)
 criterion = nn.MSELoss()
 
 # Training loop
