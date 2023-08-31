@@ -47,7 +47,8 @@ class StackedAutoencoder(nn.Module):
         return decoded
 
 
-model = StackedAutoencoder()
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = StackedAutoencoder().to(device)
 
 # 损失函数和优化器
 criterion = nn.MSELoss()
@@ -59,7 +60,7 @@ step = 2
 for epoch in range(num_epochs):
     running_loss = 0.0
     for i, (images, _) in enumerate(train_loader):
-        images = images.view(images.size(0), -1)
+        images = images.view(images.size(0), -1).to(device)
 
         # 前向传播
         outputs = model(images)

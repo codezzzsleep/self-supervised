@@ -52,8 +52,8 @@ class ConvolutionalAutoencoder(nn.Module):
         return x
 
 
-
-model = ConvolutionalAutoencoder()
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = ConvolutionalAutoencoder().to(device)
 
 # 损失函数和优化器
 criterion = nn.MSELoss()
@@ -65,7 +65,7 @@ step = 2
 for epoch in range(num_epochs):
     running_loss = 0.0
     for i, (images, _) in enumerate(train_loader):
-
+        images = images.to(device)
         # 前向传播
         outputs = model(images)
         loss = criterion(outputs, images)
