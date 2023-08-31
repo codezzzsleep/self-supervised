@@ -39,7 +39,7 @@ class DenoisingAutoencoder(nn.Module):
 
 
 # 定义添加噪声的函数
-def add_noise(images, noise_factor=0.5):
+def add_noise(images, noise_factor=0.2):
     images = images + noise_factor * torch.randn(*images.shape)
     images = images.clip(0., 1.)
     return images
