@@ -87,3 +87,4 @@ for epoch in range(num_epochs):
 model.eval()
 node_embeddings = model.encode(x, edge_index)
 reconstructed_adj_matrix = model.decode(node_embeddings)
+torch.save(model.state_dict(), "model/last.pth")
