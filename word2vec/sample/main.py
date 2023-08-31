@@ -14,7 +14,7 @@ learning_rate = 0.01
 # tensorboard 可视化训练过程
 writer = SummaryWriter("runs/logs")
 
-file_path = 'data/text8'
+file_path = '../data/text8'
 with open(file_path, 'r', encoding='utf-8') as file:
     text = file.read()
 

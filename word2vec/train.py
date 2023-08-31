@@ -4,22 +4,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+
 from word2vec.sample.net import CBOW, SkipGram
 
 torch.manual_seed(1)
-# 窗口值为2
+
 CONTEXT_SIZE = 2
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# text = """We are about to study the idea of a computational process.
-# Computational processes are abstract beings that inhabit computers.
-# As they evolve, processes manipulate other abstract things called data.
-# The evolution of a process is directed by a pattern of rules
-# called a program. People create programs to direct processes. In effect,
-# we conjure the spirits of the computer with our spells.""".split()
-text = "I love reading books She enjoys watching movies".split()
-# file_path = 'data/text8'
-# with open(file_path, 'r', encoding='utf-8') as file:
-#     text = file.read().split()
+file_path = 'data/text8'
+with open(file_path, 'r', encoding='utf-8') as file:
+    text = file.read().split()
 vocab = set(text)
 vocab_size = len(vocab)
 print('vocab_size:', vocab_size)
@@ -27,13 +21,6 @@ print('vocab_size:', vocab_size)
 # 使用字典推导式
 w2i = {w: i for i, w in enumerate(vocab)}
 i2w = {i: w for i, w in enumerate(vocab)}
-print("===============  word2index  ===============")
-for key in sorted(w2i.keys()):
-    print(f"{key}: {w2i[key]}")
-
-print("===============  index2word  ===============")
-for key in sorted(i2w.keys()):
-    print(f"{key}: {i2w[key]}")
 
 
 # context window size is two
@@ -96,31 +83,27 @@ class SkipGram(nn.Module):
 
 cbow_train_data = create_cbow_dataset(text)
 skipgram_train_data = create_skipgram_dataset(text)
-print("cbow data")
-for item in cbow_train_data:
-    print(item)
-print("skip gram")
-for item in skipgram_train_data:
-    print(item)
 
 embd_size = 50
 learning_rate = 0.001
 n_epoch = 30
+writer = SummaryWriter("runs/logs")
 
 
 def train_cbow():
     hidden_size = 10
     losses = []
     loss_fn = nn.NLLLoss()
-    model = CBOW(vocab_size, embd_size, CONTEXT_SIZE, hidden_size)
+    model = CBOW(vocab_size, embd_size, CONTEXT_SIZE, hidden_size).to(device)
     print(model)
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
     for epoch in range(n_epoch):
         total_loss = .0
-        for context, target in cbow_train_data:
+        for i, data in enumerate(cbow_train_data):
+            context, target = data
             ctx_idxs = [w2i[w] for w in context]
-            ctx_var = torch.LongTensor(ctx_idxs)
+            ctx_var = torch.LongTensor(ctx_idxs).to(device)
 
             model.zero_grad()
             log_probs = model(ctx_var)
@@ -131,22 +114,24 @@ def train_cbow():
             optimizer.step()
 
             total_loss += loss.data.item()
-        losses.append(total_loss)
+        losses.append(total_loss / i)
+        writer.add_scalar("Loss_epoch/cbow_train", total_loss / i, epoch + 1)
     return model, losses
 
 
 def train_skipgram():
     losses = []
     loss_fn = nn.MSELoss()
-    model = SkipGram(vocab_size, embd_size)
-    print(model)
+    model = SkipGram(vocab_size, embd_size).to(device)
+    # print(model)
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
     for epoch in range(n_epoch):
         total_loss = .0
-        for in_w, out_w, target in skipgram_train_data:
-            in_w_var = torch.LongTensor([w2i[in_w]])
-            out_w_var = torch.LongTensor([w2i[out_w]])
+        for i, data in enumerate(skipgram_train_data):
+            in_w, out_w, target = data
+            in_w_var = torch.LongTensor([w2i[in_w]]).to(device)
+            out_w_var = torch.LongTensor([w2i[out_w]]).to(device)
 
             model.zero_grad()
             log_probs = model(in_w_var, out_w_var)
@@ -157,6 +142,7 @@ def train_skipgram():
 
             total_loss += loss.data.item()
         losses.append(total_loss)
+        writer.add_scalar("Loss_epoch/skip_train", total_loss / i, epoch + 1)
     return model, losses
 
 
@@ -211,5 +197,3 @@ plt.plot(x, cbow_losses)
 plt.show()
 plt.plot(x, sg_losses)
 plt.show()
-# showPlot(cbow_losses, 'CBOW Losses')
-# showPlot(sg_losses, 'SkipGram Losses')
