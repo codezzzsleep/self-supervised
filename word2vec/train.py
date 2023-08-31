@@ -94,7 +94,7 @@ def train_cbow():
     hidden_size = 10
     losses = []
     loss_fn = nn.NLLLoss()
-    model = CBOW(vocab_size, embd_size, CONTEXT_SIZE, hidden_size).to(device)
+    model = CBOW(vocab_size, embd_size, CONTEXT_SIZE, hidden_size)
     print(model)
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
@@ -103,7 +103,7 @@ def train_cbow():
         for i, data in enumerate(cbow_train_data):
             context, target = data
             ctx_idxs = [w2i[w] for w in context]
-            ctx_var = torch.LongTensor(ctx_idxs).to(device)
+            ctx_var = torch.LongTensor(ctx_idxs)
 
             model.zero_grad()
             log_probs = model(ctx_var)
@@ -122,7 +122,7 @@ def train_cbow():
 def train_skipgram():
     losses = []
     loss_fn = nn.MSELoss()
-    model = SkipGram(vocab_size, embd_size).to(device)
+    model = SkipGram(vocab_size, embd_size)
     # print(model)
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
@@ -130,8 +130,8 @@ def train_skipgram():
         total_loss = .0
         for i, data in enumerate(skipgram_train_data):
             in_w, out_w, target = data
-            in_w_var = torch.LongTensor([w2i[in_w]]).to(device)
-            out_w_var = torch.LongTensor([w2i[out_w]]).to(device)
+            in_w_var = torch.LongTensor([w2i[in_w]])
+            out_w_var = torch.LongTensor([w2i[out_w]])
 
             model.zero_grad()
             log_probs = model(in_w_var, out_w_var)
