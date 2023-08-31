@@ -55,7 +55,7 @@ input_size = 784
 hidden_size = 128
 output_size = 784
 epochs = 50
-batch_size = 64
+batch_size = 256
 learning_rate = 0.0001
 # Configure device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -97,3 +97,4 @@ for epoch in range(epochs):
         optimizer.step()
     writer.add_scalar("Loss/train", running_loss / (i + 1), epoch)
     print(f"Epoch [{epoch + 1}/{epochs}], Loss: {total_loss:.4f}")
+writer.close()
