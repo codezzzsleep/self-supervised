@@ -46,6 +46,7 @@ edge_index = data.edge_index
 
 # 选择模型参数
 in_channels = x.size(1)
+print(x.size(1))
 hidden_channels = 64
 num_epochs = 200
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

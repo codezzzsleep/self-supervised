@@ -1,113 +1,97 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision
-import torchvision.transforms as transforms
-
 from torch.utils.data import DataLoader
-
-# 定义期望平均激活值和KL散度的权重
-expect_tho = 0.05
-hidden_size = 30
-tho_tensor = torch.FloatTensor([expect_tho for _ in range(hidden_size)])
-if torch.cuda.is_available():
-    tho_tensor = tho_tensor.cuda()
-_beta = 3
+from torchvision import datasets, transforms
 
 
-# 1. 定义编码器
+# Encoder
 class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(Encoder, self).__init__()
-        self.fc = nn.Linear(input_size, hidden_size)
-        self.activation = nn.ReLU()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = self.fc(x)
-        x = self.activation(x)
-        return x
+        return self.relu(self.fc1(x))
 
 
-def KL_devergence(p, q):
-    """
-    Calculate the KL-divergence of (p,q)
-    :param p:
-    :param q:
-    :return:
-    """
-    q = torch.nn.functional.softmax(q, dim=0)
-    q = torch.sum(q, dim=0) / batch_size  # dim:缩减的维度,q的第一维是batch维,即大小为batch_size大小,此处是将第j个神经元在batch_size个输入下所有的输出取平均
-    s1 = torch.sum(p * torch.log(p / q))
-    s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q)))
-    return s1 + s2
-
-
-class AutoEncoder(nn.Module):
-    def __init__(self, in_dim=784, hidden_size=30, out_dim=784):
-        super(AutoEncoder, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(in_features=in_dim, out_features=hidden_size),
-            nn.ReLU()
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(in_features=hidden_size, out_features=out_dim),
-            nn.Sigmoid()
-        )
+# Decoder
+class Decoder(nn.Module):
+    def __init__(self, hidden_size, output_size):
+        super(Decoder, self).__init__()
+        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        encoder_out = self.encoder(x)
-        decoder_out = self.decoder(encoder_out)
-        return encoder_out, decoder_out
+        return self.relu(self.fc2(x))
 
 
-# 3. 定义稀疏损失函数
-def sparse_loss(hidden_activation, target_sparsity, sparsity_weight):
-    epsilon = 1e-10
-    mean_activation = torch.mean(hidden_activation, dim=0)
-    kl_divergence = target_sparsity * torch.log(target_sparsity / (mean_activation + epsilon)) + \
-                    (1 - target_sparsity) * torch.log((1 - target_sparsity) / (1 - mean_activation + epsilon))
-    return sparsity_weight * torch.sum(kl_divergence)
+# Sparse Autoencoder
+class SparseAutoencoder(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size, rho=0.05, beta=3.):
+        super(SparseAutoencoder, self).__init__()
+        self.encoder = Encoder(input_size, hidden_size)
+        self.decoder = Decoder(hidden_size, output_size)
+        self.rho = rho
+        self.beta = beta
+
+    def forward(self, x):
+        encoder_outputs = self.encoder(x)
+        decoder_outputs = self.decoder(encoder_outputs)
+        return decoder_outputs
 
 
-# 4. 设置网络和训练参数
+# KL Divergence Loss
+def kl_divergence_loss(encoder_output, rho, batch_size):
+    rho_hat = torch.mean(encoder_output, dim=0)
+    kl_loss = torch.sum(rho * torch.log(rho / rho_hat) + (1 - rho) * torch.log((1 - rho) / (1 - rho_hat)))
+    return kl_loss / batch_size
+
+
+# Training parameters
 input_size = 784
-hidden_size = 100
-output_size = input_size
+hidden_size = 128
+output_size = 784
+epochs = 50
+batch_size = 64
 
-encoder = Encoder(input_size, hidden_size)
-decoder = Decoder(hidden_size, output_size)
+# Configure device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-optimizer = optim.Adam(list(encoder.parameters()) + list(decoder.parameters()), lr=1e-3)
+# MNIST dataset
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+# Creating the model and setting up optimizer and criterion
+sparse_ae = SparseAutoencoder(input_size, hidden_size, output_size).to(device)
+optimizer = optim.Adam(sparse_ae.parameters(), lr=0.001)
 criterion = nn.MSELoss()
 
-epochs = 100
-batch_size = 64
-target_sparsity = 0.05
-sparsity_weight = 1e-5
-# 数据处理
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.1307,), (0.3081,))
-])
-# 加载 MNIST 数据集
-train_dataset = torchvision.datasets.MNIST(root='data', train=True, transform=transform, download=True)
-train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+# Training loop
+rho = 0.05
+beta = 3.
 
-# 5. 训练网络
 for epoch in range(epochs):
-    for batch_idx, (data, _) in enumerate(train_loader):
-        data = data.view(-1, input_size)
+    for data in dataloader:
+        inputs, _ = data
+        inputs = inputs.view(inputs.size(0), -1).to(device)
 
         optimizer.zero_grad()
 
-        hidden_representation = encoder(data)
-        reconstructed_data = decoder(hidden_representation)
+        # Forward pass
+        decoder_outputs = sparse_ae(inputs)
+        reconstruction_loss = criterion(decoder_outputs, inputs)
 
-        mse_loss = criterion(reconstructed_data, data)
-        sparsity_penalty = sparse_loss(hidden_representation, target_sparsity, sparsity_weight)
-        loss = mse_loss + sparsity_penalty
+        encoder_outputs = sparse_ae.encoder(inputs)
+        kl_loss = kl_divergence_loss(encoder_outputs, rho, inputs.size(0))
 
-        loss.backward()
+        # Total loss
+        total_loss = reconstruction_loss + beta * kl_loss
+
+        # Backward pass
+        total_loss.backward()
         optimizer.step()
 
-    print("Epoch [{}/{}], Loss: {:.4f}".format(epoch + 1, epochs, loss.item()))
+    print(f"Epoch [{epoch + 1}/{epochs}], Loss: {total_loss:.4f}")

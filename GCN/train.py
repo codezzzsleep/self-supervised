@@ -1,7 +1,11 @@
+import sys
+
 import torch.nn.functional as F
 from tqdm import tqdm
+
 import utils
-import sys
+
+
 # import tensorflow as tf
 
 
@@ -32,6 +36,5 @@ def train(model, data, epochs, optimizer, path, writer=None,
             if writer is not None:
                 global_step = epoch + 1
                 writer.add_scalar('Loss/val', loss_val.item(), global_step)
-
 
     utils.save_result(model, path, True)
