@@ -1,101 +1,90 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision
+from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
-from torchvision.transforms import transforms
 
 
-# 1. 定义编码器
+# 定义变分自动编码器的网络架构
 class Encoder(nn.Module):
-    def __init__(self, input_size, hidden_size, z_dim):
+    def __init__(self, input_dim, hidden_dim, latent_dim):
         super(Encoder, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2_mean = nn.Linear(hidden_size, z_dim)
-        self.fc2_logvar = nn.Linear(hidden_size, z_dim)
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2_mean = nn.Linear(hidden_dim, latent_dim)
+        self.fc2_logvar = nn.Linear(hidden_dim, latent_dim)
 
     def forward(self, x):
-        h1 = torch.relu(self.fc1(x))
-        z_mean = self.fc2_mean(h1)
-        z_logvar = self.fc2_logvar(h1)
-        return z_mean, z_logvar
+        hidden = torch.relu(self.fc1(x))
+        mean = self.fc2_mean(hidden)
+        logvar = self.fc2_logvar(hidden)
+        return mean, logvar
 
 
-# 2. 定义解码器
 class Decoder(nn.Module):
-    def __init__(self, z_dim, hidden_size, output_size):
+    def __init__(self, latent_dim, hidden_dim, output_dim):
         super(Decoder, self).__init__()
-        self.fc1 = nn.Linear(z_dim, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.fc1 = nn.Linear(latent_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
-        h1 = torch.relu(self.fc1(x))
-        x_reconstructed = torch.sigmoid(self.fc2(h1))
-        return x_reconstructed
+        hidden = torch.relu(self.fc1(x))
+        output = torch.sigmoid(self.fc2(hidden))
+        return output
 
 
-# 3. 定义 VAE 结构
 class VAE(nn.Module):
-    def __init__(self, encoder, decoder):
+    def __init__(self, input_dim, hidden_dim, latent_dim):
         super(VAE, self).__init__()
-        self.encoder = encoder
-        self.decoder = decoder
+        self.encoder = Encoder(input_dim, hidden_dim, latent_dim)
+        self.decoder = Decoder(latent_dim, hidden_dim, input_dim)
 
-    def reparameterize(self, z_mean, z_logvar):
-        std = torch.exp(0.5 * z_logvar)
+    def reparameterize(self, mean, logvar):
+        std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
-        return z_mean + eps * std
+        z = mean + eps * std
+        return z
 
     def forward(self, x):
-        z_mean, z_logvar = self.encoder(x)
-        z = self.reparameterize(z_mean, z_logvar)
-        x_reconstructed = self.decoder(z)
-        return x_reconstructed, z_mean, z_logvar
+        mean, logvar = self.encoder(x)
+        z = self.reparameterize(mean, logvar)
+        reconstruction = self.decoder(z)
+        return reconstruction, mean, logvar
 
 
-# 4. 定义重构损失和 KL 散度损失函数
-def vae_loss(x_original, x_reconstructed, z_mean, z_logvar):
-    recon_loss = nn.functional.binary_cross_entropy(x_reconstructed, x_original, reduction='sum')
-    kl_divergence = -0.5 * torch.sum(1 + z_logvar - z_mean.pow(2) - z_logvar.exp())
-    return recon_loss + kl_divergence
+# 定义损失函数
+def vae_loss(reconstruction, x, mean, logvar):
+    reconstruction_loss = nn.functional.binary_cross_entropy(reconstruction, x, reduction='sum')
+    kl_divergence = -0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp())
+    return reconstruction_loss + kl_divergence
 
 
-# 5. 设置网络和训练参数
-input_size = 784
-hidden_size = 400
-z_dim = 20
-output_size = input_size
+# 超参数
+input_dim = 784  # 输入数据的维度
+hidden_dim = 256  # 隐藏层维度
+latent_dim = 20  # 潜在变量维度
+batch_size = 128
+num_epochs = 10
 
-encoder = Encoder(input_size, hidden_size, z_dim)
-decoder = Decoder(z_dim, hidden_size, output_size)
-vae = VAE(encoder, decoder)
-
-optimizer = optim.Adam(vae.parameters(), lr=1e-3)
-
-epochs = 50
-batch_size = 64
-
-# 数据处理
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.1307,), (0.3081,))
-])
 # 加载 MNIST 数据集
-train_dataset = torchvision.datasets.MNIST(root='data', train=True, transform=transform, download=True)
-train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+transform = transforms.Compose([transforms.ToTensor()])
+train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, download=True)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-# 6. 训练网络
-for epoch in range(epochs):
-    for batch_idx, (data, _) in enumerate(train_loader):
-        data = data.view(-1, input_size)
+# 创建 VAE 模型和优化器
+vae = VAE(input_dim, hidden_dim, latent_dim)
+optimizer = optim.Adam(vae.parameters(), lr=0.001)
 
+# 训练 VAE 模型
+for epoch in range(num_epochs):
+    for batch_idx, (x, _) in enumerate(train_loader):
+        x = x.view(-1, input_dim)
         optimizer.zero_grad()
-
-        x_reconstructed, z_mean, z_logvar = vae(data)
-
-        loss = vae_loss(data, x_reconstructed, z_mean, z_logvar)
-
+        reconstruction, mean, logvar = vae(x)
+        loss = vae_loss(reconstruction, x, mean, logvar)
         loss.backward()
         optimizer.step()
+        if batch_idx % 100 == 0:
+            print(
+                f"Epoch [{epoch + 1}/{num_epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
-    print("Epoch [{}/{}], Loss: {:.4f}".format(epoch + 1, epochs, loss.item()))
+
