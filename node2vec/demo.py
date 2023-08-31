@@ -1,5 +1,6 @@
 import random
 
+import matplotlib.pyplot as plt
 import networkx as nx
 from gensim.models import Word2Vec
 
@@ -59,11 +60,16 @@ class Node2Vec:
         str_walks = [[str(node) for node in walk] for walk in self.walks]
         model = Word2Vec(str_walks, vector_size=self.embed_size, window=self.window_size, epochs=self.iterations)
         node_embeddings = {str(node): model.wv[str(node)] for node in self.graph.nodes()}
-        return node_embeddings
+        return node_embeddings, str_walks
 
 
 def main():
-    G = nx.karate_club_graph()  # 创建或加载图
+    graph = nx.Graph()
+    graph.add_edges_from([(0, 1), (0, 2), (1, 3), (2, 3), (2, 4), (3, 4)])
+    nx.draw(graph, with_labels=True, node_size=700)
+
+    # 显示图形
+    plt.show()
     p, q = 1, 0.5
     walk_length = 10
     num_walks = 10
@@ -71,13 +77,14 @@ def main():
     iterations = 5
     window_size = 5
 
-    node2vec = Node2Vec(G, p, q, walk_length, num_walks, embed_size, iterations, window_size)
+    node2vec = Node2Vec(graph, p, q, walk_length, num_walks, embed_size, iterations, window_size)
     node2vec.create_random_walks()
-    embeddings = node2vec.learn_embedding()
-
+    embeddings, walks = node2vec.learn_embedding()
+    print("Walks:")
+    for i, item in enumerate(walks):
+        print(f"第{i}次: {item}")
     print("Embeddings:")
-    for node, embedding in embeddings.items():
-        print("Node: {}, Embedding: {}".format(node, embedding))
+    print(list(embeddings.items())[0])
 
 
 if __name__ == '__main__':
