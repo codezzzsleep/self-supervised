@@ -1,7 +1,8 @@
-import torch
-import numpy as np
 import networkx as nx
+import numpy as np
 from gensim.models import Word2Vec
+from matplotlib import pyplot as plt
+
 
 class DeepWalk:
     def __init__(self, graph, walk_length, num_walks, embedding_size):
@@ -37,13 +38,18 @@ class DeepWalk:
 # 构建图形
 graph = nx.Graph()
 graph.add_edges_from([(0, 1), (0, 2), (1, 3), (2, 3), (2, 4), (3, 4)])
+nx.draw(graph, with_labels=True, node_size=700)
 
+# 显示图形
+plt.show()
 # 创建DeepWalk对象
 deepwalk = DeepWalk(graph, walk_length=10, num_walks=80, embedding_size=128)
 
 # 生成随机游走序列
 walks = deepwalk.generate_random_walks()
-
+print("walks:")
+for i, item in enumerate(walks):
+    print(f"第 {i} 次：{item}")
 # 使用gensim库中的Word2Vec模型学习嵌入
 model = Word2Vec(walks, vector_size=deepwalk.embedding_size, window=5, min_count=0, sg=1, workers=4)
 

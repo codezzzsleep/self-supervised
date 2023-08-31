@@ -32,7 +32,7 @@ class Node2Vec:
                 else:
                     last_node = walk[-2]
                     weight = self.transition_weight(last_node, walk[-1], neighbor)
-                    candidates.extend([neighbor] * weight)
+                    candidates.extend([neighbor] * int(weight))
 
             chosen_node = random.choice(candidates)
             walk.append(chosen_node)
