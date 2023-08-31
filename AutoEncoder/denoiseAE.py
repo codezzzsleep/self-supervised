@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torchvision.datasets import MNIST
 
 
@@ -57,18 +58,26 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 autoencoder = DenoisingAutoencoder().to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(autoencoder.parameters(), lr=0.001)
+writer = SummaryWriter("runs/noise_log")
 
 num_epochs = 20
+step = 2
 for epoch in range(num_epochs):
-    for images, _ in train_loader:
+    running_loss = 0.0
+    for i, data in enumerate(train_loader):
+        images, _ = data
         noisy_images = add_noise(images)
         noisy_images, images = noisy_images.to(device), images.to(device)
 
         outputs = autoencoder(noisy_images)
         loss = criterion(outputs, images)
-
+        running_loss += loss.item()
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+        if epoch == step:
+            writer.add_image(f"noise_imgae_{step}", noisy_images, step)
+            writer.add_image(f"output_image_{step}", outputs, step)
+            step = step * step
+    writer.add_scalar("Loss_epoch/train", running_loss / i, epoch + 1)
     print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
