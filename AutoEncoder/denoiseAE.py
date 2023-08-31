@@ -51,7 +51,7 @@ transform = transforms.Compose([
 ])
 
 train_dataset = MNIST('data', train=True, transform=transform, download=True)
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
 
 # 构建和训练去噪自动编码器
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -60,7 +60,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(autoencoder.parameters(), lr=0.001)
 writer = SummaryWriter("runs/noise_log")
 
-num_epochs = 20
+num_epochs = 200
 step = 2
 for epoch in range(num_epochs):
     running_loss = 0.0
@@ -76,9 +76,9 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         if epoch == step:
-            writer.add_image(f"noise_imgae_{step}", noisy_images[0], step)
-            writer.add_image(f"output_image_{step}", outputs[0], step)
-            step = step * step
+            writer.add_image(f"noise_imgae_{step}", noisy_images[23], step)
+            writer.add_image(f"output_image_{step}", outputs[23], step)
+            step = step * 2
     writer.add_scalar("Loss_epoch/train", running_loss / i, epoch + 1)
     print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
 writer.close()
