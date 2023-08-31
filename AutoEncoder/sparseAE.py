@@ -6,6 +6,14 @@ import torchvision.transforms as transforms
 
 from torch.utils.data import DataLoader
 
+# 定义期望平均激活值和KL散度的权重
+expect_tho = 0.05
+hidden_size = 30
+tho_tensor = torch.FloatTensor([expect_tho for _ in range(hidden_size)])
+if torch.cuda.is_available():
+    tho_tensor = tho_tensor.cuda()
+_beta = 3
+
 
 # 1. 定义编码器
 class Encoder(nn.Module):
@@ -20,24 +28,44 @@ class Encoder(nn.Module):
         return x
 
 
-# 2. 定义解码器
-class Decoder(nn.Module):
-    def __init__(self, hidden_size, output_size):
-        super(Decoder, self).__init__()
-        self.fc = nn.Linear(hidden_size, output_size)
-        self.activation = nn.ReLU()
+def KL_devergence(p, q):
+    """
+    Calculate the KL-divergence of (p,q)
+    :param p:
+    :param q:
+    :return:
+    """
+    q = torch.nn.functional.softmax(q, dim=0)
+    q = torch.sum(q, dim=0) / batch_size  # dim:缩减的维度,q的第一维是batch维,即大小为batch_size大小,此处是将第j个神经元在batch_size个输入下所有的输出取平均
+    s1 = torch.sum(p * torch.log(p / q))
+    s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q)))
+    return s1 + s2
+
+
+class AutoEncoder(nn.Module):
+    def __init__(self, in_dim=784, hidden_size=30, out_dim=784):
+        super(AutoEncoder, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(in_features=in_dim, out_features=hidden_size),
+            nn.ReLU()
+        )
+        self.decoder = nn.Sequential(
+            nn.Linear(in_features=hidden_size, out_features=out_dim),
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
-        x = self.fc(x)
-        x = self.activation(x)
-        return x
+        encoder_out = self.encoder(x)
+        decoder_out = self.decoder(encoder_out)
+        return encoder_out, decoder_out
 
 
 # 3. 定义稀疏损失函数
 def sparse_loss(hidden_activation, target_sparsity, sparsity_weight):
+    epsilon = 1e-10
     mean_activation = torch.mean(hidden_activation, dim=0)
-    kl_divergence = target_sparsity * torch.log(target_sparsity / mean_activation) + \
-                    (1 - target_sparsity) * torch.log((1 - target_sparsity) / (1 - mean_activation))
+    kl_divergence = target_sparsity * torch.log(target_sparsity / (mean_activation + epsilon)) + \
+                    (1 - target_sparsity) * torch.log((1 - target_sparsity) / (1 - mean_activation + epsilon))
     return sparsity_weight * torch.sum(kl_divergence)
 
 
